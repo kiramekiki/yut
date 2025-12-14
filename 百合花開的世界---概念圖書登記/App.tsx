@@ -1,28 +1,31 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Menu, Moon, Sun, Search, Plus, Heart, Download, ChevronDown, Check, LayoutGrid, BookOpen, Book, Film, Tv, MoreHorizontal } from 'lucide-react';
 import { Category, Entry, RATING_STYLES, CATEGORY_COLORS, Rating } from './types';
-import { INITIAL_ENTRIES } from './constants';
 import Sidebar from './components/Sidebar';
 import AddEntryModal from './components/AddEntryModal';
+import { supabase } from './supabase';
 
 const App: React.FC = () => {
-  // --- State Management ---
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('theme') === 'dark' ||
-             (!window.localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
+ // --- State Management ---
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('theme') === 'dark' ||
+             (!window.localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [entries, setEntries] = useState<Entry[]>(INITIAL_ENTRIES);
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL');
-  const [selectedRating, setSelectedRating] = useState<Rating | 'ALL'>('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRatingDropdownOpen, setIsRatingDropdownOpen] = useState(false);
-  const ratingDropdownRef = useRef<HTMLDivElement>(null);
+// ⭐️ 修正點：只保留一行 entries 且初始值為 []
+  const [entries, setEntries] = useState<Entry[]>([]); 
+  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL');
+  const [selectedRating, setSelectedRating] = useState<Rating | 'ALL'>('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRatingDropdownOpen, setIsRatingDropdownOpen] = useState(false);
+  const ratingDropdownRef = useRef<HTMLDivElement>(null);
+// ⭐️ user 和 loading 狀態保留
+  const [user, setUser] = useState<any>(null); // 用來儲存登入的使用者資訊
+  const [loading, setLoading] = useState(true); // 用來顯示資料讀取中
 
   // --- Effects ---
   useEffect(() => {
@@ -48,7 +51,28 @@ const App: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+// App.tsx - Effects 區塊，在 'Close dropdown when clicking outside' 之後
 
+// Close dropdown when clicking outside
+// ... (原來的 useEffect 邏輯) ...
+  }, []);
+
+
+// ⭐️ 新增：處理 Supabase 登入狀態監聽和資料初始化 (這是啟動資料讀取的關鍵！)
+  useEffect(() => {
+    // 監聽登入狀態：追蹤是否有管理員登入
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    // 首次讀取資料
+    fetchEntries(); 
+
+    // 清理函式 (在元件被移除時停止監聽)
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []); // 確保依賴陣列為空，只在網頁初始化時執行一次
   // --- Filter Logic ---
   const filteredEntries = useMemo(() => {
     return entries.filter(entry => {
@@ -71,12 +95,46 @@ const App: React.FC = () => {
     books: entries.filter(e => e.category === Category.MANGA || e.category === Category.NOVEL).length,
     movies: entries.filter(e => e.category === Category.MOVIE || e.category === Category.ANIMATION).length
   }), [entries]);
+// ⭐️ 新增從 Supabase 讀取資料的函式
+const fetchEntries = async () => {
+  // 1. 設定讀取狀態為 True
+  setLoading(true); 
+  
+  try {
+    // 2. 執行 Supabase 查詢指令
+    // .from('items')：指定從我們在 Supabase 建立的表格 'items' 讀取資料。
+    // .select('*')：指定讀取表格中的所有欄位（title, author, tags 等）。
+    // .order(...)：指定按照資料建立時間 (created_at) 倒序排列 (ascending: false)。
+    const { data, error } = await supabase
+      .from('items') 
+      .select('*') 
+      .order('created_at', { ascending: false }); 
 
+    // 3. 處理錯誤
+    if (error) {
+      console.error('讀取資料失敗:', error.message);
+      throw error;
+    }
+    
+    // 4. 更新網頁狀態
+    // 將 Supabase 讀出的資料 (data) 設定給 entries 狀態，並強制轉換為 Entry 類型。
+    setEntries(data as Entry[]);
+    
+  } catch (error: any) {
+    console.error("讀取資料失敗:", error.message);
+    // 如果失敗，至少讓 entries 變回空陣列，避免網頁崩潰
+    setEntries([]); 
+  } finally {
+    // 5. 不管成功或失敗，最後都要設定讀取狀態為 False
+    setLoading(false);
+  }
+};
   // --- Handlers ---
-  const handleAddEntry = (newEntry: Entry) => {
-    setEntries([newEntry, ...entries]);
-  };
-
+const handleAddEntry = () => { // ⚠️ 請將這裡的內容替換
+    // ⭐️ 替換後的內容：呼叫 fetchEntries 重新讀取，並關閉 Modal
+    fetchEntries(); // 呼叫上面新增的函式，從 Supabase 取得最新資料
+    setIsModalOpen(false); // 確保在新增完成後關閉 Modal
+  };
   const handleExport = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries));
     const downloadAnchorNode = document.createElement('a');
