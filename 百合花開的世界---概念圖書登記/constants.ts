@@ -1,0 +1,48 @@
+import { Category, Entry, Rating } from './types';
+
+export const INITIAL_ENTRIES: Entry[] = [
+  {
+    id: '1',
+    title: '終將成為妳',
+    author: '仲谷鳰',
+    category: Category.MANGA,
+    rating: Rating.BIBLE,
+    coverUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=200&h=300',
+    note: '細膩描繪「喜歡」的本質，燈子與小系的拉扯是教科書級別的心理描寫。',
+    tags: ['校園', '心理', '成長'],
+    createdAt: Date.now(),
+  },
+  {
+    id: '2',
+    title: '利茲與青鳥',
+    author: '山田尚子',
+    category: Category.ANIMATION,
+    rating: Rating.TOP_TIER,
+    coverUrl: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=200&h=300',
+    note: '比起言語，眼神與動作的細微之處更能傳達愛意。童話與現實的交錯。',
+    tags: ['音樂', '唯美', '壓抑'],
+    createdAt: Date.now() - 100000,
+  },
+  {
+    id: '3',
+    title: '海邊的異邦人',
+    author: '紀伊Kanna',
+    category: Category.MANGA,
+    rating: Rating.DESTINY,
+    coverUrl: 'https://images.unsplash.com/photo-1516575150278-77136aed6920?auto=format&fit=crop&q=80&w=200&h=300',
+    note: '沖繩的陽光與海風，治癒了所有的不安。',
+    tags: ['日常', '治癒', '海邊'],
+    createdAt: Date.now() - 200000,
+  },
+  {
+    id: '4',
+    title: '少女革命',
+    author: '幾原邦彥',
+    category: Category.ANIMATION,
+    rating: Rating.MYSTERIOUS,
+    coverUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=200&h=300',
+    note: '絕對命運默示錄。打破蛋殼與世界的革命。',
+    tags: ['哲學', '象徵', '超現實'],
+    createdAt: Date.now() - 300000,
+  },
+];
