@@ -55,8 +55,8 @@ const App: React.FC = () => {
 
 // Close dropdown when clicking outside
 // ... (原來的 useEffect 邏輯) ...
-58 |  }, []);  // <--- 這裡可能是程式碼結尾，但 esbuild 預期在此處看到分號
-   |           ^
+ |  }, []);;  // <--- 這裡可能是程式碼結尾，但 esbuild 預期在此處看到分號
+ |           ^
 
 
 // ⭐️ 新增：處理 Supabase 登入狀態監聽和資料初始化 (這是啟動資料讀取的關鍵！)
